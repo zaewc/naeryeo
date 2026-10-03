@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Runtime permission on API 33+; requested from JS before starting a live update. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Install-time (normal|appop) permission required for Android 16 Live Update promotion.
+       The user can still revoke promotion per app in system settings. -->
+  <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+</manifest>

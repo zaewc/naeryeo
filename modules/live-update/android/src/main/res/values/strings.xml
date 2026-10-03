@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="naeryeo_live_update_channel_name">Trip progress</string>
+  <string name="naeryeo_live_update_channel_description">Live stop count and get-off alerts for your current ride.</string>
+</resources>

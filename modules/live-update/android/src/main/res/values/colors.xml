@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Mid-tone colours that stay legible on both light and dark notification backgrounds. -->
+  <color name="naeryeo_live_update_transit">#2F6BFF</color>
+  <color name="naeryeo_live_update_alert">#F2780C</color>
+  <color name="naeryeo_live_update_arrived">#12A150</color>
+</resources>
