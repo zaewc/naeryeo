@@ -25,7 +25,7 @@ export function NowBarPoc({ port }: { port: LiveActivityPort }) {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>내려 · NOW BAR TEST</Text>
       <Text style={styles.heading}>잠금 화면에서도{ '\n' }하차를 놓치지 않도록.</Text>
-      <Text style={styles.description}>실제 운행 정보가 아닌 테스트 알림이에요. 시작 후 화면을 잠가 Now Bar를 확인해 주세요.</Text>
+      <Text style={styles.description}>실제 운행 정보가 아닌 테스트 알림이에요. 시작 후 홈 화면에서 상단 캡슐을, 잠금 화면에서 Now Bar를 확인해 주세요.</Text>
       <View style={styles.card}>
         <Text style={styles.line}>2호선 · 테스트</Text>
         <Text style={styles.destination}>{poc.step?.title ?? '강남역 · 3정거장'}</Text>
@@ -53,7 +53,7 @@ export function NowBarPoc({ port }: { port: LiveActivityPort }) {
       <Action label="알림 설정 열기" onPress={() => poc.openSettings('notifications')} disabled={busy || !available} secondary />
       <Action label="Live Update 설정 열기" onPress={() => poc.openSettings('promotion')} disabled={busy || !available} secondary />
       <Action label="상태 새로고침" onPress={poc.refresh} disabled={busy} secondary />
-      <Text style={styles.caption}>테스트 알림은 30분 후 자동으로 종료돼요. 화면을 잠가도 알림은 남지만, 이 단계에서는 위치를 추적하지 않아요.</Text>
+      <Text style={styles.caption}>내려 화면을 보고 있는 동안 상단 캡슐은 숨겨질 수 있어요. 홈 화면으로 나가 확인해 주세요. 테스트 알림은 30분 후 자동으로 종료돼요. 이 단계에서는 위치를 추적하지 않아요.</Text>
     </ScrollView>
   </SafeAreaView>;
 }
