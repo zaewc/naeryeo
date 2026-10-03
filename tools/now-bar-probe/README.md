@@ -26,7 +26,16 @@ adb shell am start -S -n com.naeryeo.probe/.ProbeActivity --es mode progress
 
 알림의 승격 여부는 게시 이후 시스템 record에서 확인한다.
 빌드나 `hasPromotable=true`만으로 Galaxy 시각적 표시 성공이라고 기록하지 않는다.
-2026-10-03: APK 빌드·서명 검증 통과. USB 연결이 없어 설치·시각적 비교는 미실행.
+2026-10-03: APK 빌드·서명 검증 및 같은 Galaxy S24 설치·일반 알림 권한 허용을 완료했다.
+standard, bigtext, progress, eta 모두 `hasPromotable=true`, `canPost=true`였다.
+실제 게시 알림에서 `PROMOTED_ONGOING`도 확인했다.
+네 변형 모두 홈 화면에서는 일반 지도 알림 아이콘만 보였고 진단 캡슐은 보이지 않았다.
+처음 비교 때 다른 앱의 음악 캡슐이 있어 사용자가 음악을 정지한 뒤 다시 확인했다.
+음악 캡슐이 사라진 홈 화면에서도 같은 결과였다.
+Progress 변형은 사용자가 직접 보안 잠금한 상태에서도 진단 Now Bar가 보이지 않았다.
+같은 시점에 `showing=true`와 활성 `PROMOTED_ONGOING`을 확인했다.
+잠금화면의 Samsung Now brief는 보였다. 다른 세 변형의 보안 잠금화면은 미검증이다.
+비교 후 진단 앱을 제거했다.
 
 [Android 공식 요건](https://developer.android.com/develop/ui/views/notifications/live-update)
 [공식 비교 샘플](https://github.com/android/platform-samples/tree/main/samples/user-interface/live-updates)
