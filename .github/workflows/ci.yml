@@ -32,3 +32,25 @@ jobs:
         run: npm run lint:arch
       - name: Unit tests
         run: npm test -- --ci
+  android:
+    name: Android module · Kotlin tests · Manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Generate Android project (CNG)
+        run: npx expo prebuild --platform android --no-install
+      - name: Kotlin compile, unit tests and merged manifest
+        working-directory: android
+        run: ./gradlew :live-update:testDebugUnitTest :live-update:compileDebugKotlin :app:processDebugMainManifest --console=plain
