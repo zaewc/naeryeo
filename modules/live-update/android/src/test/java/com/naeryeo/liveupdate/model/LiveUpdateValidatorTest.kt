@@ -98,4 +98,15 @@ class LiveUpdateValidatorTest {
 
     assertTrue(violations.size >= 4)
   }
+
+  @Test fun `rejects phases inconsistent with remaining stops`() {
+    assertTrue(violationsOf(valid.copy(phase = "approaching", completedStops = 0)).isNotEmpty())
+    assertTrue(violationsOf(valid.copy(phase = "approaching", completedStops = 2)).isEmpty())
+    assertTrue(violationsOf(valid.copy(completedStops = 3)).isNotEmpty())
+  }
+
+  @Test fun `rejects fractional and out of JS date range eta`() {
+    assertTrue(violationsOf(valid.copy(etaEpochMillis = 1.5)).isNotEmpty())
+    assertTrue(violationsOf(valid.copy(etaEpochMillis = Long.MAX_VALUE.toDouble())).isNotEmpty())
+  }
 }
