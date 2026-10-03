@@ -57,9 +57,15 @@ object LiveUpdateValidator {
     if (phase == LiveUpdatePhase.ARRIVED && input.completedStops != input.totalStops) {
       violations += "phase 'arrived' requires completedStops == totalStops"
     }
+    if (phase == LiveUpdatePhase.TRACKING && input.completedStops == input.totalStops) {
+      violations += "tracking requires at least one remaining stop"
+    }
+    if (phase == LiveUpdatePhase.APPROACHING && input.totalStops - input.completedStops != 1) {
+      violations += "approaching requires exactly one remaining stop"
+    }
 
     val eta = input.etaEpochMillis
-    if (eta != null && (eta.isNaN() || eta.isInfinite() || eta <= 0.0 || eta > Long.MAX_VALUE.toDouble())) {
+    if (eta != null && (!eta.isFinite() || eta <= 0.0 || eta > 8_640_000_000_000_000.0 || eta % 1.0 != 0.0)) {
       violations += "etaEpochMs must be a positive epoch timestamp in milliseconds"
     }
 
