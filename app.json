@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "naeryeo",
+    "name": "내려",
     "slug": "naeryeo",
+    "scheme": "naeryeo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.naeryeo.app"
     },
     "android": {
+      "package": "com.naeryeo.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
