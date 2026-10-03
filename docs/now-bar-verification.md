@@ -108,5 +108,27 @@ OS 승격 성공만으로 Samsung 표시 성공을 기록하지 않는다.
 모든 Galaxy에서 불가능하다거나 Samsung의 앱 승인 정책이 확인됐다는 뜻은 아니다.
 일반 사용자 설정만으로의 MVP 표시 성공은 아직 확인하지 못했다.
 
+## 독립 공개 API 비교
+
+같은 One UI 8.5 기기에 `tools/now-bar-probe`의 별도 패키지 진단 APK를 설치하고
+일반 알림 권한 요청 화면에서 허용했다. Expo·React Native·AndroidX 없이
+프레임워크 API 36으로 알림을 구성했다. Samsung 비공개 extras나 패키지 위장은 없다.
+
+| 변형 | 적격성 / 게시 허용 | 실제 OS 승격 | 홈 화면 진단 캡슐 |
+| --- | --- | --- | --- |
+| 표준 | true / true | 확인 | 미표시 |
+| BigTextStyle | true / true | 확인 | 미표시 |
+| ProgressStyle 최소 구성 | true / true | 확인 | 미표시 |
+| ProgressStyle + 10분 ETA/countdown | true / true | 확인 | 미표시 |
+
+처음 비교에서 다른 앱의 음악 캡슐이 보여 사용자가 음악을 정지했다.
+음악 캡슐이 사라진 홈 화면에서도 진단 알림은 일반 지도 아이콘으로만 표시됐다.
+공개 API 최소 알림도 같은 결과이므로, 현재 현상이 Expo 브리지나 특정 스타일만의
+문제라는 설명은 이 비교에서 지지되지 않는다. Samsung의 정확한 추가 적격성 조건은 미확인이다.
+Progress 변형은 사용자가 직접 잠근 상태에서 `showing=true`와 활성 `PROMOTED_ONGOING`을
+함께 확인했다. 잠금화면 캡처 및 UI hierarchy에서 진단 Now Bar는 보이지 않았고,
+Samsung Now brief 카드만 보였다. 다른 세 변형의 보안 잠금화면은 미검증이다.
+비교 후 진단 앱을 제거했다. 일반 권한만으로의 MVP 표시는 여전히 미성공이다.
+
 모델·펌웨어에 따라 메뉴가 없거나 일반 Live notifications 설정이 제공될 수 있다.
 [Samsung 공식 Now Bar 설정 안내](https://www.samsung.com/sg/support/mobile-devices/how-to-use-the-now-bar-on-the-lock-screen-of-your-samsung-galaxy-device/)도 함께 확인한다.
