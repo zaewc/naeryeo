@@ -19,7 +19,7 @@ Now Bar에서 mock 목적지와 정거장 수를 직접 확인하기 전에는 P
 앱은 공개 Android API만 사용한다. Samsung 비공개 metadata·allowlist 우회·숨겨진 API를 추가하지 않는다.
 기기 개발자 옵션 변경으로만 보이는 경우 일반 사용자 설정에서의 성공으로 기록하지 않는다.
 
-## 현재 기기
+## One UI 8.0 개발자 설정 PoC
 
 2026-10-03: Galaxy S24 (`SM-S921N`), Android 16 (API 36), One UI 8.0.
 arm64 개발 APK 빌드와 23개 Kotlin 테스트를 통과했고, USB로 APK를 설치한 뒤 Metro 연결 및 JS bundle 로드를 확인했다.
@@ -78,7 +78,31 @@ UI hierarchy의 `com.samsung.android.app.aodservice:id/nowbar_main_text_on_norma
 
 알림 패널에서도 `실시간 정보` 구역에 `강남역 · 3정거장`과 mock 다음 역 문구를 확인했다.
 잠금화면 Now Bar, 알림 패널 실시간 구역, 상태표시줄 캡슐은 각각 별도 표면으로 검증한다.
-잠금화면의 모든 정거장 단계·종료 제거, 재부팅 이후, 개발자 옵션을 끈 환경은 추가 검증 대상이다.
+잠금화면의 모든 정거장 단계·종료 제거와 재부팅 이후는 추가 검증 대상이다.
+
+## One UI 8.5 일반 사용자 설정 검증
+
+2026-10-03, 사용자가 직접 시스템을 업데이트한 같은 Galaxy S24에서 검증했다.
+One UI 값은 `80500`, 펌웨어는 `S921NKSSHDZH3`, Android API는 36이다.
+업데이트 전 개발자 옵션의 **모든 앱의 실시간 정보 보기**를 끈 상태를 확인했다.
+업데이트 후 개발자 테스트 설정을 켜지 않았다.
+
+| 항목 | 실제 결과 |
+| --- | --- |
+| 공개 `POST_PROMOTED_NOTIFICATIONS` 권한 | 시스템에 존재하고 내려에 부여됨 |
+| 앱 상태 `promotionAllowed` | true |
+| 게시한 알림의 OS 승격 | `PROMOTED_ONGOING` 플래그 확인 |
+| 홈 화면 상단 캡슐 | 3정거장과 하차 준비 단계 모두 내려의 캡슐이 보이지 않음 |
+| 일반 앱 알림 설정 | 허용·잠금화면 내용 항상 표시, 별도 Live notifications 항목은 보이지 않음 |
+| 공개 승격 설정 intent | 내려의 일반 앱 알림 설정으로 연결됨 |
+| 잠금화면 Now Bar | 추가 실기기 확인 대기 |
+
+버튼을 누른 뒤 앱에서 게시·갱신 결과를 확인하고 홈으로 이동했다.
+홈 화면에는 일반 전철 알림 아이콘이 보였지만 정거장 수·하차 준비 캡슐은 보이지 않았다.
+OS 승격 성공만으로 Samsung 표시 성공을 기록하지 않는다.
+이 결과는 해당 기기·펌웨어·현재 공개 API 구현에 대한 관찰이며,
+모든 Galaxy에서 불가능하다거나 Samsung의 앱 승인 정책이 확인됐다는 뜻은 아니다.
+일반 사용자 설정만으로의 MVP 표시 성공은 아직 확인하지 못했다.
 
 모델·펌웨어에 따라 메뉴가 없거나 일반 Live notifications 설정이 제공될 수 있다.
 [Samsung 공식 Now Bar 설정 안내](https://www.samsung.com/sg/support/mobile-devices/how-to-use-the-now-bar-on-the-lock-screen-of-your-samsung-galaxy-device/)도 함께 확인한다.
