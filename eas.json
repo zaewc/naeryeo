@@ -1,0 +1,15 @@
+{
+  "build": {
+    "base": { "node": "24.13.0" },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    }
+  }
+}
