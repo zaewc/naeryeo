@@ -9,6 +9,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.net.Uri
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -21,7 +22,8 @@ import expo.modules.kotlin.exception.CodedException
 class LiveUpdateNotifications(private val context: Context) {
   private val manager = context.getSystemService(NotificationManager::class.java)
 
-  private fun channel(): NotificationChannel {
+  private fun channel(): NotificationChannel? {
+    if (Build.VERSION.SDK_INT < 26) return null
     val channel = NotificationChannel(CHANNEL, context.getString(R.string.naeryeo_live_update_channel_name),
       NotificationManager.IMPORTANCE_DEFAULT).apply {
       description = context.getString(R.string.naeryeo_live_update_channel_description)
@@ -36,7 +38,7 @@ class LiveUpdateNotifications(private val context: Context) {
     return mapOf(
       "sdkVersion" to Build.VERSION.SDK_INT,
       "notificationsEnabled" to NotificationManagerCompat.from(context).areNotificationsEnabled(),
-      "channelEnabled" to (currentChannel.importance > NotificationManager.IMPORTANCE_NONE),
+      "channelEnabled" to ((currentChannel?.importance ?: NotificationManager.IMPORTANCE_DEFAULT) > NotificationManager.IMPORTANCE_NONE),
       "liveUpdatesSupported" to (Build.VERSION.SDK_INT >= 36),
       "promotionAllowed" to if (Build.VERSION.SDK_INT >= 36) manager.canPostPromotedNotifications() else false,
       "activeId" to active.firstOrNull()?.tag?.removePrefix(TAG_PREFIX),
@@ -71,6 +73,11 @@ class LiveUpdateNotifications(private val context: Context) {
   fun end(id: String) { manager.cancel(TAG_PREFIX + id, NOTIFICATION_ID) }
 
   fun openSettings(promotion: Boolean) {
+    if (Build.VERSION.SDK_INT < 26) {
+      context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      return
+    }
     val action = if (promotion && Build.VERSION.SDK_INT >= 36) {
       Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS
     } else Settings.ACTION_APP_NOTIFICATION_SETTINGS
@@ -85,7 +92,7 @@ class LiveUpdateNotifications(private val context: Context) {
   private fun post(request: LiveUpdateRequest) {
     val currentChannel = channel()
     if (!NotificationManagerCompat.from(context).areNotificationsEnabled() ||
-      currentChannel.importance == NotificationManager.IMPORTANCE_NONE) {
+      currentChannel?.importance == NotificationManager.IMPORTANCE_NONE) {
       fail("ERR_PERMISSION_DENIED", "Enable app notifications and the trip progress channel")
     }
     val content = request.content
