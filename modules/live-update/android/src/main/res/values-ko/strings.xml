@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="naeryeo_live_update_channel_name">실시간 하차 알림</string>
+  <string name="naeryeo_live_update_channel_description">탑승 중인 버스·지하철의 남은 정거장과 하차 알림을 보여줘요.</string>
+</resources>
