@@ -38,7 +38,10 @@
     "test": "jest --passWithNoTests",
     "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
     "test:server": "node --test server/*.test.mjs",
-    "start:transit": "node --env-file=.env server/index.mjs"
+    "start:transit": "node --env-file=.env server/index.mjs",
+    "transit:cloud:check": "npx wrangler@4.147.0 deploy --dry-run --config server/wrangler.jsonc",
+    "transit:cloud:deploy": "npx wrangler@4.147.0 deploy --config server/wrangler.jsonc",
+    "transit:cloud:secret": "node server/upload-secret.mjs"
   },
   "private": true,
   "jest": {

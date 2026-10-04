@@ -37,3 +37,12 @@ API 키를 앱 번들·EXPO_PUBLIC 변수·저장소에 넣지 않는다. 서버
 - 갤럭시는 재연결할 수 없어 이 버전의 삼성 Now Bar 표시 검증은 미실시. 외부 서버 배포와 기기 재설치도 아직 완료되지 않았다.
 
 참고: https://developer.android.com/develop/background-work/services/fgs/service-types 및 https://developer.android.com/develop/background-work/services/fgs/launch
+
+## 배포 준비
+
+- Cloudflare Workers/SQLite Durable Object 배포 형식의 백엔드를 추가했다. 공유 캐시와 최근 24시간 호출 예산을 저장해 재시작 시 한도가 초기화되지 않는다.
+- Worker Secret 업로드 명령은 루트 .env에서 키만 읽으며 명령행/로그로 출력하지 않는다.
+- Free 계정 로그인 전까지 외부 배포는 진행하지 않는다. Expo 계정 로그인은 확인했지만 외부 서버 주소가 없어 EAS 설치용 APK는 아직 생성하지 않았다.
+- 에뮬레이터에서 알림의 이동 종료 액션을 누르면 앱을 열지 않고 서비스/알림이 종료되는 것도 확인했다.
+
+- 로컬 Workers 런타임에서도 실제 광주 차량 5개의 응답과 관측 경과 시간을 검증했다. Node 20에서는 Wrangler가 실행되지 않으므로 `nvm use`로 프로젝트 Node 24.13.0을 사용해야 한다.
