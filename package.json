@@ -36,7 +36,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test": "jest --passWithNoTests",
-    "lint:arch": "depcruise src --config .dependency-cruiser.cjs"
+    "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
+    "test:server": "node --test server/*.test.mjs",
+    "start:transit": "node --env-file=.env server/index.mjs"
   },
   "private": true,
   "jest": {
@@ -48,7 +50,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/android/",
-      "/ios/"
+      "/ios/",
+      "/server/"
     ]
   }
 }
