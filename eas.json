@@ -1,6 +1,11 @@
 {
   "build": {
-    "base": { "node": "24.13.0" },
+    "base": {
+      "node": "24.13.0",
+      "env": {
+        "EXPO_PUBLIC_TRANSIT_API_URL": "https://naeryeo-transit.naeryeo.workers.dev"
+      }
+    },
     "development": {
       "extends": "base",
       "developmentClient": true,
@@ -9,7 +14,9 @@
     "preview": {
       "extends": "base",
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     }
   }
 }
