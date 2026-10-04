@@ -16,3 +16,12 @@ it('does not expose backend error bodies or credentials to the user', async () =
   global.fetch = jest.fn<typeof fetch>().mockResolvedValue(new Response('sensitive upstream detail', { status: 502 }));
   await expect(createTransitApi('https://example.test').routes()).rejects.toThrow('버스 정보 제공이 지연');
 });
+it('converts server cache age to local time even when server and device clocks differ', async () => {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(10000);
+  try {
+    global.fetch = jest.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify([
+      { routeId: '1', vehicleId: 'bus', reachedSequence: 20, observedAt: 9999999, ageMs: 1500, registration: '광주77', currentStopId: 'a' },
+    ]), { status: 200 }));
+    expect((await createTransitApi('https://example.test').vehicles('1'))[0]?.observedAt).toBe(8500);
+  } finally { clock.mockRestore(); }
+});
