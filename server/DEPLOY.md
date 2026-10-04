@@ -1,6 +1,6 @@
 # 외부 서버와 설치용 앱 준비
 
-Cloudflare Workers + SQLite Durable Object로 서버를 배포합니다. 하나의 객체에서 모든 사용자의 공식 API 캐시와 호출 예산을 공유하며, 객체가 다시 시작되어도 관측 시각/호출 예산은 유지합니다. 계정 인증과 배포는 아직 수행하지 않았습니다.
+Cloudflare Workers + SQLite Durable Object로 서버를 배포합니다. 하나의 객체에서 모든 사용자의 공식 API 캐시와 호출 예산을 공유하며, 객체가 다시 시작되어도 관측 시각/호출 예산은 유지합니다. 2026-10-04에 인증 및 배포를 완료했습니다. 공개 주소는 `https://naeryeo-transit.naeryeo.workers.dev`이며 실제 노선 120개, 노선 1의 정류장 50개와 차량 응답을 HTTPS로 확인했습니다.
 
 먼저 프로젝트 폴더에서 `nvm use`를 실행해 `.nvmrc`의 Node 24.13.0을 사용합니다. Node 20에서는 현재 Wrangler가 실행되지 않습니다.
 
@@ -14,4 +14,4 @@ Cloudflare Workers + SQLite Durable Object로 서버를 배포합니다. 하나�
 
 현재 한도 및 요금은 https://developers.cloudflare.com/workers/platform/pricing/ 및 https://developers.cloudflare.com/durable-objects/platform/pricing/ 를 확인하세요. Free 플랜에서 시작하고 유료 플랜 전환은 따로 결정합니다. 임시 미인증 계정에 API 키를 업로드하지 않습니다.
 
-검증된 범위: 실제 Workers 런타임용 번들 dry-run 및 로컬 Workers 런타임에서 실제 광주 차량 API 응답, 순환 정류장/캐시 관측 시각/재시작 후 호출 예산/동시 요청 경합 단위 테스트. 앱의 실제 광주 버스 자동 갱신은 Android API 36 에뮬레이터에서 확인했습니다. 외부 서버 배포, 설치용 EAS APK 및 갤럭시 표시 검증은 별도 단계입니다.
+검증된 범위: 실제 Workers 런타임용 번들 dry-run 및 로컬 Workers 런타임에서 실제 광주 차량 API 응답, 순환 정류장/캐시 관측 시각/재시작 후 호출 예산/동시 요청 경합 단위 테스트. 앱의 실제 광주 버스 자동 갱신은 Android API 36 에뮬레이터에서 확인했습니다. 외부 서버 배포와 실제 HTTPS API 응답은 확인했습니다. Expo 프로젝트 `@haensol/naeryeo`에서 preview APK를 빌드하며, 갤럭시 표시 검증은 기기 연결 후 별도 단계입니다.

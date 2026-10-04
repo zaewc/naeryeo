@@ -26,6 +26,13 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3458d1e4-6b2d-46d7-babf-2c7ae36a1be8"
+      }
+    },
+    "owner": "haensol"
   }
 }
