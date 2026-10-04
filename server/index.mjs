@@ -10,7 +10,7 @@ const server = createServer(async (request, response) => {
   try {
     let data;
     if (url.pathname === '/routes') data = await provider.lines();
-    else if (routeMatch) data = routeMatch[2] ? await provider.vehicles(routeMatch[1]) : await provider.route(routeMatch[1]);
+    else if (routeMatch) data = routeMatch[2] ? (await provider.vehicles(routeMatch[1])).map(vehicle => ({ ...vehicle, ageMs: Math.max(0, Date.now() - vehicle.observedAt) })) : await provider.route(routeMatch[1]);
     else { response.writeHead(404); response.end(JSON.stringify({ error: 'not-found' })); return; }
     response.writeHead(200); response.end(JSON.stringify(data));
   } catch (error) {

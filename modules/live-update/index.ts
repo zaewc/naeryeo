@@ -30,6 +30,9 @@ export interface NativeLiveUpdateStatus {
 }
 
 export interface NaeryeoLiveUpdateModule extends NativeModule {
+  startTripTracking(config: string): Promise<void>;
+  getTripTracking(): Promise<string | null>;
+  endTripTracking(id: string): Promise<void>;
   getStatus(): Promise<NativeLiveUpdateStatus>;
   requestPermission(): Promise<{ granted: boolean }>;
   openSettings(promotion: boolean): Promise<void>;

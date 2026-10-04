@@ -2,6 +2,7 @@ import type { TransitRoute, VehicleObservation } from '../model/trip';
 export interface RouteSummary { readonly id: string; readonly name: string; readonly direction: string }
 export interface TransitVehicle extends VehicleObservation { readonly registration: string; readonly currentStopId: string }
 export interface TransitDataPort {
+  trackingEndpoint(id: string): string;
   routes(): Promise<readonly RouteSummary[]>;
   route(id: string): Promise<TransitRoute>;
   vehicles(id: string): Promise<readonly TransitVehicle[]>;
@@ -41,6 +42,7 @@ export function createTransitApi(base: string): TransitDataPort {
     return response.json();
   }
   return {
+    trackingEndpoint: id => `${base.replace(/\/$/, '')}/routes/${encodeURIComponent(id)}/vehicles`,
     async routes() { return array(await get('/routes')).map(summary); },
     async route(id) {
       const item = record(await get(`/routes/${encodeURIComponent(id)}`));
@@ -51,11 +53,14 @@ export function createTransitApi(base: string): TransitDataPort {
       }) };
     },
     async vehicles(id) {
+      const requestedAt = Date.now();
       return array(await get(`/routes/${encodeURIComponent(id)}/vehicles`)).map(value => {
         const vehicle = record(value);
         if (vehicle['routeId'] !== id) throw new Error('선택한 노선과 차량이 일치하지 않아요.');
+        const ageMs = number(vehicle['ageMs']);
+        if (ageMs < 0) throw new Error('위치 정보 시각을 확인할 수 없어요.');
         return { vehicleId: text(vehicle['vehicleId']), routeId: id, reachedSequence: sequence(vehicle['reachedSequence']),
-          observedAt: number(vehicle['observedAt']), registration: text(vehicle['registration']), currentStopId: text(vehicle['currentStopId']) };
+          observedAt: requestedAt - ageMs, registration: text(vehicle['registration']), currentStopId: text(vehicle['currentStopId']) };
       });
     },
   };

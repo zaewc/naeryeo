@@ -16,9 +16,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.naeryeo.liveupdate.model.*
+import com.naeryeo.liveupdate.tracking.TripTrackingService
 import expo.modules.kotlin.exception.CodedException
 
-/** Owns notification construction only; there is no JS timer or tracking service in Phase 1. */
+/** Shared public-API notification factory for diagnostic and native tracking flows. */
 class LiveUpdateNotifications(private val context: Context) {
   private val manager = context.getSystemService(NotificationManager::class.java)
 
@@ -27,6 +28,7 @@ class LiveUpdateNotifications(private val context: Context) {
     val channel = NotificationChannel(CHANNEL, context.getString(R.string.naeryeo_live_update_channel_name),
       NotificationManager.IMPORTANCE_DEFAULT).apply {
       description = context.getString(R.string.naeryeo_live_update_channel_description)
+      enableVibration(true)
     }
     manager.createNotificationChannel(channel)
     return manager.getNotificationChannel(CHANNEL)
@@ -34,14 +36,14 @@ class LiveUpdateNotifications(private val context: Context) {
 
   fun status(): Map<String, Any?> {
     val currentChannel = channel()
-    val active = manager.activeNotifications.filter { it.tag?.startsWith(TAG_PREFIX) == true }
+    val active = manager.activeNotifications.filter { it.tag?.startsWith(TAG_PREFIX) == true || it.notification.extras.getString(TRIP_ID) != null }
     return mapOf(
       "sdkVersion" to Build.VERSION.SDK_INT,
       "notificationsEnabled" to NotificationManagerCompat.from(context).areNotificationsEnabled(),
       "channelEnabled" to ((currentChannel?.importance ?: NotificationManager.IMPORTANCE_DEFAULT) > NotificationManager.IMPORTANCE_NONE),
       "liveUpdatesSupported" to (Build.VERSION.SDK_INT >= 36),
       "promotionAllowed" to if (Build.VERSION.SDK_INT >= 36) manager.canPostPromotedNotifications() else false,
-      "activeId" to active.firstOrNull()?.tag?.removePrefix(TAG_PREFIX),
+      "activeId" to active.firstOrNull()?.let { it.notification.extras.getString(TRIP_ID) ?: it.tag?.removePrefix(TAG_PREFIX) },
       // OS-reported promotion is evidence, but does not prove a Samsung Now Bar is visible.
       "promoted" to (Build.VERSION.SDK_INT >= 36 && active.any {
         it.notification.flags and Notification.FLAG_PROMOTED_ONGOING != 0
@@ -51,7 +53,7 @@ class LiveUpdateNotifications(private val context: Context) {
 
   fun start(request: LiveUpdateRequest) {
     if (request.content.phase != LiveUpdatePhase.TRACKING) fail("ERR_INVALID_TRANSITION", "Start in tracking phase")
-    if (manager.activeNotifications.any { it.tag?.startsWith(TAG_PREFIX) == true }) {
+    if (manager.activeNotifications.any { it.tag?.startsWith(TAG_PREFIX) == true || it.notification.extras.getString(TRIP_ID) != null }) {
       fail("ERR_ALREADY_ACTIVE", "End the current live update before starting another")
     }
     post(request)
@@ -70,7 +72,12 @@ class LiveUpdateNotifications(private val context: Context) {
     post(request)
   }
 
-  fun end(id: String) { manager.cancel(TAG_PREFIX + id, NOTIFICATION_ID) }
+  fun end(id: String) {
+    manager.cancel(TAG_PREFIX + id, NOTIFICATION_ID)
+    if (manager.activeNotifications.any { it.id == TRACKING_NOTIFICATION_ID && it.notification.extras.getString(TRIP_ID) == id }) {
+      manager.cancel(TRACKING_NOTIFICATION_ID)
+    }
+  }
 
   fun openSettings(promotion: Boolean) {
     if (Build.VERSION.SDK_INT < 26) {
@@ -90,6 +97,11 @@ class LiveUpdateNotifications(private val context: Context) {
   }
 
   private fun post(request: LiveUpdateRequest) {
+    try { manager.notify(TAG_PREFIX + request.id, NOTIFICATION_ID, build(request)) }
+    catch (error: SecurityException) { throw CodedException("ERR_PERMISSION_DENIED", "Notification permission was revoked", error) }
+  }
+
+  fun build(request: LiveUpdateRequest): Notification {
     val currentChannel = channel()
     if (!NotificationManagerCompat.from(context).areNotificationsEnabled() ||
       currentChannel?.importance == NotificationManager.IMPORTANCE_NONE) {
@@ -122,10 +134,16 @@ class LiveUpdateNotifications(private val context: Context) {
       .setColor(color).setRequestPromotedOngoing(true)
       .setShortCriticalText(content.chipText)
       .addExtras(Bundle().apply {
+        putString(TRIP_ID, request.id)
         putString(PHASE, content.phase.wireName)
         putInt(TOTAL, content.progress.totalStops)
         putInt(COMPLETED, content.progress.completedStops)
       })
+    if (TripTrackingService.running) {
+      val stopIntent = Intent(context, TripTrackingService::class.java).setAction("naeryeo.STOP_TRIP").putExtra("tripId", request.id)
+      val stop = PendingIntent.getService(context, 1, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+      builder.addAction(0, "이동 종료", stop)
+    }
     if (Build.VERSION.SDK_INT >= 36) {
       builder.setStyle(NotificationCompat.ProgressStyle()
         .setProgress(layout.progress)
@@ -145,13 +163,14 @@ class LiveUpdateNotifications(private val context: Context) {
     }
     // Prevent a stale PoC notification lingering if the user forgets to end it.
     builder.setTimeoutAfter(30 * 60 * 1000L)
-    try { manager.notify(TAG_PREFIX + request.id, NOTIFICATION_ID, builder.build()) }
-    catch (error: SecurityException) { throw CodedException("ERR_PERMISSION_DENIED", "Notification permission was revoked", error) }
+    return builder.build()
   }
 
   private fun fail(code: String, message: String): Nothing = throw CodedException(code, message, null)
 
   companion object {
+    const val TRACKING_NOTIFICATION_ID = 2
+    const val TRIP_ID = "naeryeo.tripId"
     private const val CHANNEL = "trip-progress-v1"
     private const val TAG_PREFIX = "naeryeo.live-update:"
     private const val NOTIFICATION_ID = 1

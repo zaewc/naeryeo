@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import type { RouteSummary, TransitDataPort, TransitRoute, TransitVehicle } from '@/entities/trip';
 import type { LiveActivityPort } from '@/shared/platform/live-activity';
+import type { TripTrackingPort } from '@/shared/platform/trip-tracking';
 import { useLiveTrip } from '../model/use-live-trip';
-export function GwangjuPlanner({ port, data }: { port: LiveActivityPort; data: TransitDataPort }) {
+export function GwangjuPlanner({ port, data, tracking }: { port: LiveActivityPort; data: TransitDataPort; tracking: TripTrackingPort }) {
   const [routes, setRoutes] = useState<readonly RouteSummary[]>([]);
   const [route, setRoute] = useState<TransitRoute | null>(null);
   const [vehicles, setVehicles] = useState<readonly TransitVehicle[]>([]);
@@ -15,7 +16,7 @@ export function GwangjuPlanner({ port, data }: { port: LiveActivityPort; data: T
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const generation = useRef(0);
-  const trip = useLiveTrip(port, data);
+  const trip = useLiveTrip(port, data, tracking);
   useEffect(() => {
     let active = true;
     data.routes().then(value => { if (active) setRoutes(value); }).catch(e => { if (active) setError(e instanceof Error ? e.message : '다시 시도해 주세요.'); }).finally(() => { if (active) setLoading(false); });
@@ -42,11 +43,11 @@ export function GwangjuPlanner({ port, data }: { port: LiveActivityPort; data: T
     <View style={styles.header}><Text style={styles.logo}>내려</Text><Text style={styles.muted}>광주 버스</Text></View>
     {progress ? <>
       <Text style={styles.title}>{progress.destination.name}</Text>
-      <View style={styles.card}><Text style={styles.count}>{progress.phase === 'arrived' ? '도착했어요' : `${progress.remainingStops}정거장`}</Text>
-        <Text style={styles.white}>{progress.phase === 'approaching' ? '다음 정류장에서 내려 주세요.' : progress.nextStop ? `다음 · ${progress.nextStop.name}` : '주변을 확인하고 안전하게 내려 주세요.'}</Text>
+      <View style={styles.card}><Text style={styles.count}>{progress.phase === 'arrived' ? '도착했어요' : progress.freshness === 'stale' ? '위치 확인 중' : `${progress.remainingStops}정거장`}</Text>
+        <Text style={styles.white}>{progress.phase === 'arrived' ? '주변을 확인하고 안전하게 내려 주세요.' : progress.freshness === 'stale' ? '위치 정보가 오래되었어요. 안내 방송을 확인해 주세요.' : progress.phase === 'approaching' ? '다음 정류장에서 내려 주세요.' : progress.nextStop ? `다음 · ${progress.nextStop.name}` : '주변을 확인하고 안전하게 내려 주세요.'}</Text>
         <Text style={styles.white}>{trip.session?.selection.route.name} · {trip.session?.vehicle.registration}</Text></View>
-      <Text style={styles.muted}>현재 버전은 아래 버튼으로 실제 차량 위치를 갱신합니다. 화면을 끈 상태의 자동 갱신은 아직 준비 중이에요.</Text>
-      {progress.phase !== 'arrived' && <Button label="차량 위치 갱신" disabled={disabled} onPress={() => void trip.refresh()} />}
+      <Text style={styles.muted}>이동 중에는 화면을 꺼도 차량 위치를 자동으로 확인해요. 버스 안내 방송도 함께 확인해 주세요.</Text>
+      {progress.phase !== 'arrived' && <Button label="이동 상태 확인" disabled={disabled} onPress={() => void trip.refresh()} />}
       <Button label={progress.phase === 'arrived' ? '이동 완료' : '이동 종료'} disabled={disabled} onPress={() => void trip.end()} />
     </> : <>
       <Text style={styles.title}>{'어디에서\n내리시나요?'}</Text>
@@ -64,9 +65,10 @@ export function GwangjuPlanner({ port, data }: { port: LiveActivityPort; data: T
         <Button label="차량 목록 새로고침" disabled={disabled} onPress={() => void selectRoute(route.id)} />
         {vehicle && <>
           <Text style={styles.label}>내릴 정류장</Text><TextInput style={styles.input} accessibilityLabel="목적지 검색" placeholder="정류장 이름 검색" value={query} onChangeText={setQuery} />
-          {route.stops.filter(stop => stop.sequence > vehicle.reachedSequence && stop.name.includes(query.trim())).map(stop => <Button key={stop.sequence} label={`${destination === stop.sequence ? '● ' : ''}${stop.name} · ${stop.sequence}번째`} disabled={disabled} onPress={() => setDestination(stop.sequence)} />)}
           {destination !== null && <Text style={styles.label}>선택한 목적지 · {route.stops.find(s => s.sequence === destination)?.name}</Text>}
+          {trip.error && <Text accessibilityRole="alert" style={styles.muted}>{trip.error}</Text>}
           <Button label="하차 알림 시작" disabled={disabled || destination === null} onPress={() => { if (destination !== null) void trip.start({ route, boardingSequence: vehicle.reachedSequence, destinationSequence: destination }, vehicle); }} />
+          {route.stops.filter(stop => stop.sequence > vehicle.reachedSequence && stop.name.includes(query.trim())).map(stop => <Button key={stop.sequence} label={`${destination === stop.sequence ? '● ' : ''}${stop.name} · ${stop.sequence}번째`} disabled={disabled} onPress={() => setDestination(stop.sequence)} />)}
         </>}
       </>}
     </>}

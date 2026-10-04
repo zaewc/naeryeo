@@ -1,52 +1,62 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { calculateTripProgress, type TripProgress, type TripSelection, type TransitDataPort, type TransitVehicle } from '@/entities/trip';
-import { LiveActivityError, type LiveActivityPort } from '@/shared/platform/live-activity';
-import { presentTrip } from './presentation';
-interface Session { id: string; selection: TripSelection; vehicle: TransitVehicle; progress: TripProgress }
-export function useLiveTrip(port: LiveActivityPort, data: TransitDataPort) {
+import { type LiveActivityPort } from '@/shared/platform/live-activity';
+import type { TripTrackingPort, TrackingSnapshot } from '@/shared/platform/trip-tracking';
+import { startTrackedTrip, endTrackedTrip } from './start-trip';
+interface Session { id: string; selection: TripSelection; vehicle: TransitVehicle; progress: TripProgress; running: boolean }
+function sessionFromSnapshot(snapshot: TrackingSnapshot): Session {
+  const config = snapshot.config;
+  const selection = { route: { id: config.routeId, name: config.routeName, direction: '', stops: config.stops },
+    boardingSequence: config.boardingSequence, destinationSequence: config.destinationSequence };
+  const vehicle = { routeId: config.routeId, vehicleId: config.vehicleId, registration: config.registration,
+    reachedSequence: snapshot.reachedSequence, observedAt: snapshot.observedAt,
+    currentStopId: config.stops.find(stop => stop.sequence === snapshot.reachedSequence)?.id ?? '' };
+  return { id: config.id, selection, vehicle, progress: calculateTripProgress(selection, vehicle, Date.now()), running: snapshot.running };
+}
+export function useLiveTrip(port: LiveActivityPort, data: TransitDataPort, tracking: TripTrackingPort) {
   const [session, setSession] = useState<Session | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lock = useRef(false);
+  const generation = useRef(0);
+  useEffect(() => {
+    let active = true;
+    let reading = false;
+    const operationGeneration = generation;
+    async function sync() {
+      if (!active || reading || lock.current || AppState.currentState !== 'active') return;
+      const expectedGeneration = operationGeneration.current;
+      reading = true;
+      try {
+        const snapshot = await tracking.snapshot();
+        if (!active || expectedGeneration !== operationGeneration.current || lock.current) return;
+        setSession(snapshot ? sessionFromSnapshot(snapshot) : null);
+        if (snapshot) setError(snapshot.error ?? (!snapshot.running && snapshot.phase !== 'arrived' ? '이동 추적이 중단됐어요. 이동을 종료하고 다시 시작해 주세요.' : null));
+      } catch (e) { if (active && expectedGeneration === operationGeneration.current) setError(e instanceof Error ? e.message : '이동 상태를 확인하지 못했어요.'); }
+      finally { reading = false; }
+    }
+    void sync();
+    const timer = setInterval(() => void sync(), 2000);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') void sync(); });
+    return () => { active = false; clearInterval(timer); subscription.remove(); };
+  }, [tracking]);
   async function perform(work: () => Promise<void>) {
     if (lock.current) return;
-    lock.current = true; setBusy(true); setError(null);
+    lock.current = true; generation.current++; setBusy(true); setError(null);
     try { await work(); } catch (e) { setError(e instanceof Error ? e.message : '다시 시도해 주세요.'); }
     finally { lock.current = false; setBusy(false); }
   }
   const start = (selection: TripSelection, vehicle: TransitVehicle) => perform(async () => {
-    const status = await port.getStatus();
-    if (!status.available) throw new LiveActivityError('unavailable');
-    if (status.activeId) throw new LiveActivityError('already-active');
-    if (!status.notificationsEnabled && !await port.requestPermission()) throw new LiveActivityError('permission-denied');
-    if (!status.channelEnabled) throw new LiveActivityError('permission-denied');
-    const latest = (await data.vehicles(selection.route.id)).find(v => v.vehicleId === vehicle.vehicleId);
-    if (!latest) throw new Error('선택한 버스의 위치를 확인할 수 없어요. 차량을 다시 선택해 주세요.');
-    const progress = calculateTripProgress(selection, latest, Date.now());
-    if (progress.freshness === 'stale' || progress.phase === 'arrived' || latest.reachedSequence < selection.boardingSequence) throw new Error('현재 차량 위치에서 목적지를 다시 선택해 주세요.');
-    const id = `trip-${Date.now()}`;
-    const input = presentTrip(id, selection.route, progress, false);
-    await port.start({ ...input, phase: 'tracking' });
-    setSession({ id, selection, vehicle: latest, progress });
-    if (progress.phase === 'approaching') await port.update({ ...input, alert: true });
+    setSession(await startTrackedTrip(selection, vehicle, port, data, tracking));
   });
   const refresh = () => perform(async () => {
-    if (!session || session.progress.phase === 'arrived') return;
-    const latest = (await data.vehicles(session.selection.route.id)).find(v => v.vehicleId === session.vehicle.vehicleId);
-    if (!latest) throw new Error('버스 위치 정보가 잠시 끊겼어요. 안내 방송도 함께 확인해 주세요.');
-    if (latest.reachedSequence < session.vehicle.reachedSequence) throw new Error('버스 위치가 이전 순서로 바뀌었어요. 이동을 종료하고 다시 선택해 주세요.');
-    const progress = calculateTripProgress(session.selection, latest, Date.now());
-    // Public native lifecycle requires the approaching state before arrival.
-    if (progress.phase === 'arrived' && session.progress.phase === 'tracking') {
-      await port.update({ ...presentTrip(session.id, session.selection.route, progress, false),
-        phase: 'approaching', completedStops: progress.totalStops - 1 });
-    }
-    await port.update(presentTrip(session.id, session.selection.route, progress, progress.phase !== session.progress.phase));
-    setSession({ ...session, vehicle: latest, progress });
+    const snapshot = await tracking.snapshot();
+    setSession(snapshot ? sessionFromSnapshot(snapshot) : null);
+    if (snapshot?.error) setError(snapshot.error);
   });
   const end = () => perform(async () => {
-    const id = session?.id ?? (await port.getStatus()).activeId;
-    if (id) await port.end(id);
+    await endTrackedTrip(session?.id ?? null, port, tracking);
     setSession(null);
   });
   return { session, busy, error, start, refresh, end };
