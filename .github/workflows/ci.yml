@@ -32,6 +32,8 @@ jobs:
         run: npm run lint:arch
       - name: Unit tests
         run: npm test -- --ci
+      - name: Transit server tests
+        run: npm run test:server
   android:
     name: Android module · Kotlin tests · Manifest
     runs-on: ubuntu-latest
