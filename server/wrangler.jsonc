@@ -1,0 +1,15 @@
+{
+  "name": "naeryeo-transit",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-04",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "vars": {
+    "GWANGJU_BUS_SERVICE_URL": "https://apis.data.go.kr/6290000/gj_bis",
+    "GWANGJU_BUS_DAILY_LIMIT": "100"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "GWANGJU_BACKEND", "class_name": "GwangjuBackend" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GwangjuBackend"] }]
+}

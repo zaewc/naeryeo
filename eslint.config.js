@@ -8,7 +8,11 @@ const NATIVE_ACCESS_MESSAGE =
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', 'android/*', 'ios/*', '.expo/*', 'coverage/*'],
+    ignores: ['dist/*', 'android/*', 'ios/*', '.expo/*', 'coverage/*', '**/.wrangler/**'],
+  },
+  {
+    files: ['server/worker.mjs'],
+    rules: { 'import/no-unresolved': ['error', { ignore: ['^cloudflare:workers$'] }] },
   },
   {
     files: ['**/*.ts', '**/*.tsx'],

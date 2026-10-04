@@ -34,6 +34,8 @@ jobs:
         run: npm test -- --ci
       - name: Transit server tests
         run: npm run test:server
+      - name: Transit Worker build (no deployment)
+        run: npm run transit:cloud:check
   android:
     name: Android module · Kotlin tests · Manifest
     runs-on: ubuntu-latest

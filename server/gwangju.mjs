@@ -45,7 +45,7 @@ export function mapVehicles(payload, routeId, observedAt) {
       registration: name(item.CARNO), currentStopId: id(item.CURR_STOP_ID) };
   });
 }
-export function createGwangjuProvider({ key, base = DEFAULT_BASE, fetcher = fetch, now = Date.now }) {
+export function createGwangjuProvider({ key, base = DEFAULT_BASE, fetcher = fetch, now = Date.now, cacheStore }) {
   if (!key) throw new TransitProviderError('missing-key');
   const baseUrl = new URL(base.endsWith('/') ? base : `${base}/`);
   if (baseUrl.protocol !== 'https:' || baseUrl.hostname !== 'apis.data.go.kr' || baseUrl.search || baseUrl.username || baseUrl.password) throw new TransitProviderError('invalid-base');
@@ -57,11 +57,19 @@ export function createGwangjuProvider({ key, base = DEFAULT_BASE, fetcher = fetc
     if (cached && now() - cached.at < ttl) return cached;
     if (pending.has(cacheKey)) return pending.get(cacheKey);
     const work = (async () => {
+      const persisted = await cacheStore?.get(`cache:${cacheKey}`);
+      if (persisted && Number.isFinite(persisted.at) && now() >= persisted.at && now() - persisted.at < ttl) {
+        cache.set(cacheKey, persisted);
+        return persisted;
+      }
       const url = new URL(operation, baseUrl);
       url.search = new URLSearchParams({ serviceKey: decodeURIComponent(key), resultType: 'json', ...params }).toString();
       let response;
       try { response = await fetcher(url, { signal: AbortSignal.timeout(10000) }); }
-      catch { throw new TransitProviderError('upstream-unavailable'); }
+      catch (error) {
+        if (error instanceof TransitProviderError && error.code === 'request-budget-exhausted') throw error;
+        throw new TransitProviderError('upstream-unavailable');
+      }
       if (!response.ok) throw new TransitProviderError('upstream-unavailable');
       let data;
       try { data = await response.json(); } catch { throw new TransitProviderError('invalid-response'); }
@@ -69,6 +77,7 @@ export function createGwangjuProvider({ key, base = DEFAULT_BASE, fetcher = fetc
       // Rejected responses are never retained as successful cache entries.
       if (object(object(data).RESPONSE).RESULT?.RESULT_CODE !== 'SUCCESS') throw new TransitProviderError('provider-rejected');
       cache.set(cacheKey, result);
+      await cacheStore?.put(`cache:${cacheKey}`, result);
       if (cache.size > 1000) cache.delete(cache.keys().next().value);
       return result;
     })();
